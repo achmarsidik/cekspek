@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-900 to-slate-900">
@@ -6,39 +8,37 @@ export default function Home() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
-            <div className="flex items-center space-x-2">
+            <Link href="/" className="flex items-center space-x-2">
               <span className="text-2xl">📱</span>
               <span className="text-xl font-bold text-white">
                 CekSpek<span className="text-blue-400">.id</span>
               </span>
-            </div>
+            </Link>
             
             {/* Navigation */}
             <nav className="hidden md:flex items-center space-x-6">
-              <a href="#" className="text-slate-300 hover:text-white transition">
+              <Link href="/phones" className="text-slate-300 hover:text-white transition">
                 Smartphone
-              </a>
-              <a href="#" className="text-slate-300 hover:text-white transition">
+              </Link>
+              <Link href="/compare" className="text-slate-300 hover:text-white transition">
                 Compare
-              </a>
-              <a href="#" className="text-slate-300 hover:text-white transition">
-                Brand
-              </a>
+              </Link>
+              <Link href="/search" className="text-slate-300 hover:text-white transition">
+                Search
+              </Link>
             </nav>
 
-            {/* Search Bar */}
-            <div className="flex items-center">
+            {/* Search Bar - Link to Search Page */}
+            <Link href="/search" className="flex items-center">
               <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Cari smartphone..."
-                  className="bg-slate-800 text-white px-4 py-2 pl-10 rounded-lg border border-slate-600 focus:border-blue-500 focus:outline-none w-64"
-                />
+                <div className="bg-slate-800 text-slate-400 px-4 py-2 pl-10 rounded-lg border border-slate-600 hover:border-blue-500 transition cursor-pointer w-48 md:w-64">
+                  Cari smartphone...
+                </div>
                 <span className="absolute left-3 top-2.5 text-slate-400">
                   🔍
                 </span>
               </div>
-            </div>
+            </Link>
           </div>
         </div>
       </header>
@@ -58,27 +58,27 @@ export default function Home() {
             sesuai budget kamu. Database lengkap smartphone dari 2020-2025.
           </p>
 
-          {/* Search Box Hero */}
-          <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 max-w-xl mx-auto">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Ketik nama HP... (contoh: Samsung Galaxy S24)"
-                className="w-full bg-slate-900 text-white px-5 py-4 pl-12 rounded-xl border border-slate-600 focus:border-blue-500 focus:outline-none text-lg"
-              />
-              <span className="absolute left-4 top-4 text-2xl">
-                🔍
-              </span>
+          {/* Search Box Hero - Link to Search Page */}
+          <Link href="/search">
+            <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 max-w-xl mx-auto hover:border-blue-500 transition cursor-pointer">
+              <div className="relative">
+                <div className="w-full bg-slate-900 text-slate-400 px-5 py-4 pl-12 rounded-xl border border-slate-600 text-lg text-left">
+                  Ketik nama HP... (contoh: Samsung Galaxy S24)
+                </div>
+                <span className="absolute left-4 top-4 text-2xl">
+                  🔍
+                </span>
+              </div>
+              
+              {/* Quick Links */}
+              <div className="flex flex-wrap justify-center gap-2 mt-4">
+                <span className="text-slate-400 text-sm">Populer:</span>
+                <span className="text-blue-400 text-sm">iPhone 16 Pro</span>
+                <span className="text-blue-400 text-sm">Samsung S24 Ultra</span>
+                <span className="text-blue-400 text-sm">Xiaomi 14</span>
+              </div>
             </div>
-            
-            {/* Quick Links */}
-            <div className="flex flex-wrap justify-center gap-2 mt-4">
-              <span className="text-slate-400 text-sm">Populer:</span>
-              <a href="#" className="text-blue-400 text-sm hover:underline">iPhone 16 Pro</a>
-              <a href="#" className="text-blue-400 text-sm hover:underline">Samsung S24 Ultra</a>
-              <a href="#" className="text-blue-400 text-sm hover:underline">Xiaomi 14</a>
-            </div>
-          </div>
+          </Link>
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-8 mt-16 max-w-2xl mx-auto">
@@ -102,97 +102,62 @@ export default function Home() {
           <p className="text-center text-slate-400 mb-8">Brand Populer</p>
           <div className="flex flex-wrap justify-center gap-4">
             {['Samsung', 'Apple', 'Xiaomi', 'OPPO', 'Vivo', 'Realme', 'OnePlus', 'Google'].map((brand) => (
-              <div 
+              <Link 
                 key={brand}
+                href={`/phones?brand=${brand.toLowerCase()}`}
                 className="bg-slate-800 px-6 py-3 rounded-lg border border-slate-700 hover:border-blue-500 transition cursor-pointer"
               >
                 <span className="text-white font-medium">{brand}</span>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
 
-        {/* Featured Phones Preview */}
+        {/* Quick Actions */}
         <div className="mt-20">
           <h2 className="text-2xl font-bold text-white text-center mb-8">
-            📱 Smartphone Terbaru
+            🚀 Mulai Sekarang
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Phone Card 1 */}
-            <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden hover:border-blue-500 transition group">
-              <div className="aspect-square bg-slate-700 flex items-center justify-center">
-                <span className="text-6xl">📱</span>
-              </div>
-              <div className="p-4">
-                <h3 className="font-semibold text-white group-hover:text-blue-400 transition">
-                  Samsung Galaxy S24 Ultra
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            {/* Cari HP */}
+            <Link href="/search">
+              <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 hover:border-blue-500 transition text-center group">
+                <span className="text-4xl mb-4 block">🔍</span>
+                <h3 className="text-white font-semibold mb-2 group-hover:text-blue-400 transition">
+                  Cari Smartphone
                 </h3>
-                <p className="text-slate-400 text-sm mt-1">Snapdragon 8 Gen 3 • 12GB RAM</p>
-                <div className="flex items-center justify-between mt-3">
-                  <span className="text-blue-400 font-bold">Rp 19.999.000</span>
-                  <span className="text-yellow-400 text-sm">⭐ 4.8</span>
-                </div>
+                <p className="text-slate-400 text-sm">
+                  Temukan HP berdasarkan nama atau spesifikasi
+                </p>
               </div>
-            </div>
+            </Link>
 
-            {/* Phone Card 2 */}
-            <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden hover:border-blue-500 transition group">
-              <div className="aspect-square bg-slate-700 flex items-center justify-center">
-                <span className="text-6xl">📱</span>
-              </div>
-              <div className="p-4">
-                <h3 className="font-semibold text-white group-hover:text-blue-400 transition">
-                  iPhone 16 Pro Max
+            {/* Bandingkan */}
+            <Link href="/compare">
+              <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 hover:border-blue-500 transition text-center group">
+                <span className="text-4xl mb-4 block">⚖️</span>
+                <h3 className="text-white font-semibold mb-2 group-hover:text-blue-400 transition">
+                  Bandingkan HP
                 </h3>
-                <p className="text-slate-400 text-sm mt-1">A18 Pro • 8GB RAM</p>
-                <div className="flex items-center justify-between mt-3">
-                  <span className="text-blue-400 font-bold">Rp 22.999.000</span>
-                  <span className="text-yellow-400 text-sm">⭐ 4.9</span>
-                </div>
+                <p className="text-slate-400 text-sm">
+                  Bandingkan spesifikasi 2-3 smartphone
+                </p>
               </div>
-            </div>
+            </Link>
 
-            {/* Phone Card 3 */}
-            <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden hover:border-blue-500 transition group">
-              <div className="aspect-square bg-slate-700 flex items-center justify-center">
-                <span className="text-6xl">📱</span>
-              </div>
-              <div className="p-4">
-                <h3 className="font-semibold text-white group-hover:text-blue-400 transition">
-                  Xiaomi 14 Ultra
+            {/* Lihat Semua */}
+            <Link href="/phones">
+              <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 hover:border-blue-500 transition text-center group">
+                <span className="text-4xl mb-4 block">📱</span>
+                <h3 className="text-white font-semibold mb-2 group-hover:text-blue-400 transition">
+                  Semua Smartphone
                 </h3>
-                <p className="text-slate-400 text-sm mt-1">Snapdragon 8 Gen 3 • 16GB RAM</p>
-                <div className="flex items-center justify-between mt-3">
-                  <span className="text-blue-400 font-bold">Rp 14.999.000</span>
-                  <span className="text-yellow-400 text-sm">⭐ 4.7</span>
-                </div>
+                <p className="text-slate-400 text-sm">
+                  Lihat semua HP di database kami
+                </p>
               </div>
-            </div>
-
-            {/* Phone Card 4 */}
-            <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden hover:border-blue-500 transition group">
-              <div className="aspect-square bg-slate-700 flex items-center justify-center">
-                <span className="text-6xl">📱</span>
-              </div>
-              <div className="p-4">
-                <h3 className="font-semibold text-white group-hover:text-blue-400 transition">
-                  Google Pixel 9 Pro
-                </h3>
-                <p className="text-slate-400 text-sm mt-1">Tensor G4 • 16GB RAM</p>
-                <div className="flex items-center justify-between mt-3">
-                  <span className="text-blue-400 font-bold">Rp 16.999.000</span>
-                  <span className="text-yellow-400 text-sm">⭐ 4.6</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* View All Button */}
-          <div className="text-center mt-8">
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition">
-              Lihat Semua Smartphone →
-            </button>
+            </Link>
           </div>
         </div>
       </main>
