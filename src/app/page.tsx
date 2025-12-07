@@ -1,6 +1,74 @@
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
 
-export default function Home() {
+// Fungsi format harga
+function formatPrice(price: number | null): string {
+  if (!price) return '-'
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(price)
+}
+
+// Ambil HP terbaru dari database
+async function getLatestPhones() {
+  const { data, error } = await supabase
+    .from('phones')
+    .select(`
+      id, name, slug, image_url, price_min, chipset, ram,
+      brands ( name )
+    `)
+    .eq('is_featured', true)
+    .order('created_at', { ascending: false })
+    .limit(4)
+
+  if (error) {
+    console.error('Error:', error)
+    return []
+  }
+  return data ?? []
+}
+
+// Ambil brands populer
+async function getBrands() {
+  const { data, error } = await supabase
+    .from('brands')
+    .select('id, name, slug')
+    .order('name', { ascending: true })
+    .limit(8)
+
+  if (error) return []
+  return data ?? []
+}
+
+// Ambil statistik
+async function getStats() {
+  const { count: phonesCount } = await supabase
+    .from('phones')
+    .select('*', { count: 'exact', head: true })
+
+  const { count: brandsCount } = await supabase
+    .from('brands')
+    .select('*', { count: 'exact', head: true })
+
+  const { count: reviewsCount } = await supabase
+    .from('reviews')
+    .select('*', { count: 'exact', head: true })
+
+  return {
+    phones: phonesCount || 0,
+    brands: brandsCount || 0,
+    reviews: reviewsCount || 0
+  }
+}
+
+export default async function Home() {
+  const phones = await getLatestPhones()
+  const brands = await getBrands()
+  const stats = await getStats()
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-900 to-slate-900">
       {/* Header / Navbar */}
@@ -9,7 +77,7 @@ export default function Home() {
           <div className="flex items-center justify-between">
             {/* Logo */}
             <Link href="/" className="flex items-center space-x-2">
-              <span className="text-2xl">📱</span>
+              <span className="text-2xl">����</span>
               <span className="text-xl font-bold text-white">
                 CekSpek<span className="text-blue-400">.id</span>
               </span>
@@ -28,7 +96,7 @@ export default function Home() {
               </Link>
             </nav>
 
-            {/* Search Bar - Link to Search Page */}
+            {/* Search Bar */}
             <Link href="/search" className="flex items-center">
               <div className="relative">
                 <div className="bg-slate-800 text-slate-400 px-4 py-2 pl-10 rounded-lg border border-slate-600 hover:border-blue-500 transition cursor-pointer w-48 md:w-64">
@@ -55,10 +123,10 @@ export default function Home() {
           {/* Subtitle */}
           <p className="text-xl text-slate-300 mb-8">
             Bandingkan spesifikasi, baca review, dan temukan HP terbaik 
-            sesuai budget kamu. Database lengkap smartphone dari 2020-2025.
+            sesuai budget kamu. Database lengkap smartphone Indonesia.
           </p>
 
-          {/* Search Box Hero - Link to Search Page */}
+          {/* Search Box Hero */}
           <Link href="/search">
             <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 max-w-xl mx-auto hover:border-blue-500 transition cursor-pointer">
               <div className="relative">
@@ -80,37 +148,96 @@ export default function Home() {
             </div>
           </Link>
 
-          {/* Stats */}
+          {/* Stats - Dynamic dari Database */}
           <div className="grid grid-cols-3 gap-8 mt-16 max-w-2xl mx-auto">
             <div className="text-center">
-              <div className="text-3xl font-bold text-white">850+</div>
+              <div className="text-3xl font-bold text-white">{stats.phones}+</div>
               <div className="text-slate-400">Smartphone</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-white">50+</div>
+              <div className="text-3xl font-bold text-white">{stats.brands}+</div>
               <div className="text-slate-400">Brand</div>
             </div>
             <div className="text-center">
-              <div className="text-3xl font-bold text-white">100%</div>
-              <div className="text-slate-400">Gratis</div>
+              <div className="text-3xl font-bold text-white">{stats.reviews}+</div>
+              <div className="text-slate-400">Reviews</div>
             </div>
           </div>
         </div>
 
-        {/* Brand Logos */}
+        {/* Brand Logos - Dynamic dari Database */}
         <div className="mt-20">
           <p className="text-center text-slate-400 mb-8">Brand Populer</p>
           <div className="flex flex-wrap justify-center gap-4">
-            {['Samsung', 'Apple', 'Xiaomi', 'OPPO', 'Vivo', 'Realme', 'OnePlus', 'Google'].map((brand) => (
+            {brands.map((brand: any) => (
               <Link 
-                key={brand}
-                href={`/phones?brand=${brand.toLowerCase()}`}
+                key={brand.id}
+                href={`/phones?brand=${brand.slug}`}
                 className="bg-slate-800 px-6 py-3 rounded-lg border border-slate-700 hover:border-blue-500 transition cursor-pointer"
               >
-                <span className="text-white font-medium">{brand}</span>
+                <span className="text-white font-medium">{brand.name}</span>
               </Link>
             ))}
           </div>
+        </div>
+
+        {/* Featured Phones - Dynamic dari Database */}
+        <div className="mt-20">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl font-bold text-white">
+              📱 Smartphone Unggulan
+            </h2>
+            <Link 
+              href="/phones"
+              className="text-blue-400 hover:text-blue-300 transition"
+            >
+              Lihat Semua →
+            </Link>
+          </div>
+          
+          {phones.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {phones.map((phone: any) => (
+                <Link key={phone.id} href={`/phones/${phone.slug}`}>
+                  <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden hover:border-blue-500 transition group">
+                    <div className="aspect-square bg-slate-700 flex items-center justify-center">
+                      {phone.image_url ? (
+                        <img 
+                          src={phone.image_url}
+                          alt={phone.name}
+                          className="w-full h-full object-contain p-4 group-hover:scale-110 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="text-center">
+                          <span className="text-6xl">📱</span>
+                          <p className="text-slate-500 text-sm mt-2">{phone.brands?.name}</p>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <p className="text-blue-400 text-sm">{phone.brands?.name}</p>
+                      <h3 className="font-semibold text-white group-hover:text-blue-400 transition line-clamp-2 min-h-[48px]">
+                        {phone.name}
+                      </h3>
+                      <p className="text-slate-400 text-sm mt-1 line-clamp-1">
+                        {phone.chipset} • {phone.ram}
+                      </p>
+                      <div className="flex items-center justify-between mt-3">
+                        <span className="text-blue-400 font-bold">
+                          {formatPrice(phone.price_min)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-slate-800/50 rounded-xl border border-slate-700">
+              <span className="text-4xl mb-4 block">📱</span>
+              <p className="text-slate-400">Belum ada smartphone unggulan</p>
+            </div>
+          )}
         </div>
 
         {/* Quick Actions */}
@@ -122,7 +249,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {/* Cari HP */}
             <Link href="/search">
-              <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 hover:border-blue-500 transition text-center group">
+              <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 hover:border-blue-500 transition text-center group h-full">
                 <span className="text-4xl mb-4 block">🔍</span>
                 <h3 className="text-white font-semibold mb-2 group-hover:text-blue-400 transition">
                   Cari Smartphone
@@ -135,26 +262,26 @@ export default function Home() {
 
             {/* Bandingkan */}
             <Link href="/compare">
-              <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 hover:border-blue-500 transition text-center group">
+              <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 hover:border-blue-500 transition text-center group h-full">
                 <span className="text-4xl mb-4 block">⚖️</span>
                 <h3 className="text-white font-semibold mb-2 group-hover:text-blue-400 transition">
                   Bandingkan HP
                 </h3>
                 <p className="text-slate-400 text-sm">
-                  Bandingkan spesifikasi 2-3 smartphone
+                  Bandingkan spesifikasi 2-3 smartphone sekaligus
                 </p>
               </div>
             </Link>
 
             {/* Lihat Semua */}
             <Link href="/phones">
-              <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 hover:border-blue-500 transition text-center group">
+              <div className="bg-slate-800 rounded-xl border border-slate-700 p-6 hover:border-blue-500 transition text-center group h-full">
                 <span className="text-4xl mb-4 block">📱</span>
                 <h3 className="text-white font-semibold mb-2 group-hover:text-blue-400 transition">
                   Semua Smartphone
                 </h3>
                 <p className="text-slate-400 text-sm">
-                  Lihat semua HP di database kami
+                  Jelajahi {stats.phones}+ smartphone dari {stats.brands}+ brand
                 </p>
               </div>
             </Link>
