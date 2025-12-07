@@ -1,10 +1,191 @@
+// src/app/phones/[slug]/page.tsx
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import ReviewList from '@/components/ReviewList'
 import AffiliateSection from '@/components/AffiliateSection'
+import { Metadata } from 'next'
 
-// Fungsi format harga
+// ============================================================
+// TYPE DEFINITIONS
+// ============================================================
+type Props = {
+  params: Promise<{ slug: string }>
+}
+
+// ============================================================
+// GENERATE METADATA DINAMIS - SEO OPTIMIZATION
+// ============================================================
+/**
+ * FUNGSI: generateMetadata()
+ * 
+ * Fungsi khusus Next.js yang berjalan SEBELUM halaman di-render.
+ * Digunakan untuk membuat metadata SEO yang berbeda untuk setiap HP.
+ * 
+ * KENAPA PENTING:
+ * - Setiap HP punya metadata sendiri (judul, deskripsi, gambar)
+ * - Google akan index setiap halaman dengan informasi yang relevan
+ * - Preview di social media akan menampilkan info HP yang tepat
+ * 
+ * CARA KERJA:
+ * 1. Ambil slug dari URL (contoh: /phones/samsung-galaxy-s24-ultra)
+ * 2. Query database untuk data HP tersebut
+ * 3. Generate metadata berdasarkan data HP
+ * 4. Return metadata untuk digunakan Next.js
+ */
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params
+  
+  // Ambil data HP dari database
+  const { data: phone } = await supabase
+    .from('phones')
+    .select('*, brands ( name, slug )')
+    .eq('slug', slug)
+    .single()
+
+  // Jika HP tidak ditemukan, return metadata default
+  if (!phone) {
+    return {
+      title: 'HP Tidak Ditemukan',
+      description: 'Smartphone yang Anda cari tidak ditemukan di database kami.',
+    }
+  }
+
+  // ============================================================
+  // BUILD METADATA DINAMIS
+  // ============================================================
+  
+  // 1. JUDUL (Title)
+  // Format: "Nama HP - Spesifikasi Lengkap, Harga & Review"
+  // Contoh: "Samsung Galaxy S24 Ultra - Spesifikasi Lengkap, Harga & Review"
+  const title = `${phone.name} - Spesifikasi Lengkap, Harga & Review`
+  
+  // 2. DESKRIPSI (Description)
+  // Fungsi: Ringkasan spek utama untuk Google snippet
+  // Format: Include spek penting (layar, chipset, kamera, baterai, harga)
+  // Tips: 150-160 karakter, padat informasi
+  const description = `Spesifikasi lengkap ${phone.name}: Layar ${phone.display_size}" ${phone.display_type}, ${phone.chipset}, kamera utama ${phone.camera_main}, baterai ${phone.battery_capacity}mAh. Cek harga terbaik dan review dari pengguna.`
+  
+  // 3. KEYWORDS
+  // Fungsi: Kata kunci spesifik untuk HP ini
+  // Include: nama HP, brand, tahun rilis, chipset, fitur unggulan
+  const keywords = [
+    phone.name,                              // "Samsung Galaxy S24 Ultra"
+    phone.brands?.name,                      // "Samsung"
+    `spesifikasi ${phone.name}`,            // "spesifikasi Samsung Galaxy S24 Ultra"
+    `harga ${phone.name}`,                  // "harga Samsung Galaxy S24 Ultra"
+    `review ${phone.name}`,                 // "review Samsung Galaxy S24 Ultra"
+    phone.chipset,                           // "Snapdragon 8 Gen 3"
+    `${phone.brands?.name} ${phone.release_year || '2024'}`,  // "Samsung 2024"
+    `hp ${phone.brands?.name?.toLowerCase()}`,  // "hp samsung"
+  ]
+
+  // 4. RETURN METADATA OBJECT
+  return {
+    // Basic Metadata
+    title,           // Akan jadi: "Samsung Galaxy S24 Ultra | CekSpek.id" (karena template)
+    description,
+    keywords,
+    
+    // ============================================================
+    // OPEN GRAPH (Facebook, WhatsApp, LinkedIn)
+    // ============================================================
+    /**
+     * FUNGSI: Preview card di social media
+     * 
+     * KETIKA USER SHARE LINK:
+     * - Judul: Nama HP + brand
+     * - Deskripsi: Spek singkat
+     * - Gambar: Foto HP
+     * - URL: Link ke halaman HP
+     * 
+     * CONTOH HASIL:
+     * ┌─────────────────────────────────────┐
+     * │ [Gambar Samsung S24 Ultra]          │
+     * │                                     │
+     * │ Samsung Galaxy S24 Ultra            │
+     * │ Spesifikasi lengkap: 6.8" AMOLED...│
+     * │                                     │
+     * │ cekspek.vercel.app                  │
+     * └─────────────────────────────────────┘
+     */
+    openGraph: {
+      title,
+      description,
+      type: 'article',  // 'article' untuk konten detail (bukan 'website')
+      url: `https://cekspek.vercel.app/phones/${slug}`,
+      siteName: 'CekSpek.id',
+      locale: 'id_ID',
+      images: [
+        {
+          url: phone.image_url || '/placeholder-phone.jpg',  // Fallback jika tidak ada gambar
+          width: 800,
+          height: 600,
+          alt: `Foto ${phone.name}`,  // Alt text untuk accessibility
+          type: 'image/jpeg',
+        },
+      ],
+      // Metadata tambahan untuk artikel
+      publishedTime: phone.created_at,  // Kapan HP ditambahkan ke database
+      modifiedTime: phone.updated_at,   // Kapan terakhir diupdate
+      authors: ['CekSpek.id Team'],
+      tags: keywords,  // Tag untuk kategorisasi
+    },
+    
+    // ============================================================
+    // TWITTER CARD
+    // ============================================================
+    /**
+     * FUNGSI: Preview khusus untuk Twitter/X
+     * 
+     * summary_large_image = Card besar dengan gambar dominan
+     * Tampilan di Twitter akan lebih menarik dan clickable
+     */
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: [phone.image_url || '/placeholder-phone.jpg'],
+      creator: '@cekspekid',  // Ganti dengan Twitter handle Anda
+    },
+    
+    // ============================================================
+    // CANONICAL URL
+    // ============================================================
+    /**
+     * FUNGSI: Mencegah duplicate content
+     * 
+     * Memberitahu Google bahwa ini adalah URL utama/resmi untuk HP ini.
+     * Penting jika ada banyak URL yang mengarah ke halaman sama.
+     */
+    alternates: {
+      canonical: `https://cekspek.vercel.app/phones/${slug}`,
+    },
+    
+    // ============================================================
+    // ROBOTS (Override dari layout.tsx jika perlu)
+    // ============================================================
+    /**
+     * FUNGSI: Kontrol crawling per halaman
+     * 
+     * Untuk halaman HP: semua boleh diindex dan diikuti
+     * Jika ada halaman yang tidak mau diindex (misal HP discontinued),
+     * bisa set robots: { index: false }
+     */
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+      },
+    },
+  }
+}
+
+// ============================================================
+// FUNGSI HELPER (tidak berubah dari kode sebelumnya)
+// ============================================================
 function formatPrice(price: number | null): string {
   if (!price) return '-'
   return new Intl.NumberFormat('id-ID', {
@@ -15,7 +196,6 @@ function formatPrice(price: number | null): string {
   }).format(price)
 }
 
-// Fungsi format tanggal
 function formatDate(dateString: string | null): string {
   if (!dateString) return '-'
   return new Date(dateString).toLocaleDateString('id-ID', {
@@ -25,7 +205,6 @@ function formatDate(dateString: string | null): string {
   })
 }
 
-// Komponen untuk menampilkan spesifikasi
 function SpecItem({ label, value }: { label: string; value: string | number | boolean | null }) {
   if (value === null || value === undefined || value === '') return null
   
@@ -42,7 +221,6 @@ function SpecItem({ label, value }: { label: string; value: string | number | bo
   )
 }
 
-// Komponen Section Spesifikasi
 function SpecSection({ title, icon, children }: { title: string; icon: string; children: React.ReactNode }) {
   return (
     <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-6 mb-6">
@@ -57,7 +235,6 @@ function SpecSection({ title, icon, children }: { title: string; icon: string; c
   )
 }
 
-// Ambil data HP berdasarkan slug
 async function getPhone(slug: string) {
   const { data, error } = await supabase
     .from('phones')
@@ -69,7 +246,6 @@ async function getPhone(slug: string) {
   return data
 }
 
-// Ambil reviews untuk HP ini
 async function getReviews(phoneId: number) {
   const { data, error } = await supabase
     .from('reviews')
@@ -81,12 +257,10 @@ async function getReviews(phoneId: number) {
   return data || []
 }
 
-// Halaman Detail HP
-export default async function PhoneDetailPage({ 
-  params 
-}: { 
-  params: Promise<{ slug: string }> 
-}) {
+// ============================================================
+// HALAMAN DETAIL HP (tidak berubah)
+// ============================================================
+export default async function PhoneDetailPage({ params }: Props) {
   const { slug } = await params
   const phone = await getPhone(slug)
 
@@ -167,17 +341,14 @@ export default async function PhoneDetailPage({
 
           {/* Info Utama */}
           <div>
-            {/* Brand Badge */}
             <div className="inline-block bg-blue-600/20 border border-blue-500/30 px-3 py-1 rounded-full text-blue-400 text-sm mb-4">
               {phone.brands?.name}
             </div>
 
-            {/* Nama HP */}
             <h1 className="text-3xl md:text-4xl font-bold text-white mb-4">
               {phone.name}
             </h1>
 
-            {/* Rating */}
             <div className="flex items-center gap-3 mb-6">
               <div className="flex items-center gap-1">
                 <span className="text-yellow-400 text-xl">
@@ -193,7 +364,6 @@ export default async function PhoneDetailPage({
               </span>
             </div>
 
-            {/* Harga */}
             <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-6 mb-6">
               <p className="text-slate-400 text-sm mb-1">Harga</p>
               <p className="text-2xl font-bold text-blue-400">
@@ -209,7 +379,6 @@ export default async function PhoneDetailPage({
               )}
             </div>
 
-            {/* Quick Specs */}
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-slate-800/50 rounded-lg border border-slate-700 p-4">
                 <p className="text-slate-400 text-sm">Layar</p>
@@ -231,7 +400,6 @@ export default async function PhoneDetailPage({
           </div>
         </div>
 
-        {/* Affiliate Section */}
         <AffiliateSection
           phoneName={phone.name}
           priceMin={phone.price_min}
@@ -240,11 +408,9 @@ export default async function PhoneDetailPage({
           tokopediaLink={phone.tokopedia_link}
         />
 
-        {/* Spesifikasi Lengkap */}
         <h2 className="text-2xl font-bold text-white mb-6">📋 Spesifikasi Lengkap</h2>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Kolom Kiri */}
           <div>
             <SpecSection title="Layar" icon="📺">
               <SpecItem label="Ukuran" value={phone.display_size ? `${phone.display_size} inch` : null} />
@@ -272,7 +438,6 @@ export default async function PhoneDetailPage({
             </SpecSection>
           </div>
 
-          {/* Kolom Kanan */}
           <div>
             <SpecSection title="Baterai" icon="🔋">
               <SpecItem label="Kapasitas" value={phone.battery_capacity ? `${phone.battery_capacity} mAh` : null} />
@@ -306,11 +471,9 @@ export default async function PhoneDetailPage({
           </div>
         </div>
 
-        {/* Reviews Section */}
         <ReviewList phoneId={phone.id} initialReviews={reviews} />
       </main>
 
-      {/* Footer */}
       <footer className="bg-slate-900 border-t border-slate-800 mt-12">
         <div className="container mx-auto px-4 py-8">
           <div className="text-center text-slate-400">
@@ -321,3 +484,30 @@ export default async function PhoneDetailPage({
     </div>
   )
 }
+
+// ============================================================
+// RINGKASAN PERUBAHAN & MANFAAT SEO:
+// ============================================================
+/**
+ * PERUBAHAN UTAMA:
+ * 1. Tambah import Metadata dari next
+ * 2. Tambah fungsi generateMetadata() sebelum komponen
+ * 3. Metadata akan auto-generated untuk setiap HP
+ * 
+ * MANFAAT SEO:
+ * ✅ Setiap HP punya judul unik di Google
+ * ✅ Deskripsi spesifik muncul di hasil pencarian
+ * ✅ Preview bagus ketika di-share di social media
+ * ✅ Google dapat index semua halaman HP dengan tepat
+ * ✅ Meningkatkan CTR (Click Through Rate) dari pencarian
+ * 
+ * CONTOH HASIL DI GOOGLE:
+ * ┌─────────────────────────────────────────────────────────┐
+ * │ Samsung Galaxy S24 Ultra | CekSpek.id                  │
+ * │ https://cekspek.vercel.app/phones/samsung-galaxy-s24-... │
+ * │                                                         │
+ * │ Spesifikasi lengkap Samsung Galaxy S24 Ultra: Layar   │
+ * │ 6.8" Dynamic AMOLED, Snapdragon 8 Gen 3, kamera 200MP,│
+ * │ baterai 5000mAh. Cek harga terbaik dan review...      │
+ * └─────────────────────────────────────────────────────────┘
+ */
